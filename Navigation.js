@@ -6,6 +6,7 @@ import OnboardingScreen from './components/OnboardingScreen';
 import LoginScreen from './components/LoginScreen';
 import SignUpScreen from './components/SignUpScreen';
 import HomeScreen from './components/HomeScreen';
+import OtpVerificationScreen from './components/OtpScreen';
 
 const Stack = createStackNavigator();
 
@@ -18,6 +19,8 @@ const Navigation = () => {
         <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
         <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+        <Stack.Screen name="Otp" component={OtpVerificationScreen} options={{ headerShown: false }} />
+
       </Stack.Navigator>
     </NavigationContainer>
   );
