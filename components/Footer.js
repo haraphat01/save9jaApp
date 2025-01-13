@@ -1,23 +1,26 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 
 export default function Footer() {
+  const navigation = useNavigation();
+
   return (
     <View style={styles.footer}>
-      <TouchableOpacity style={styles.tab}>
+      <TouchableOpacity style={styles.tab} onPress={() => navigation.navigate('Home')}>
         <Ionicons name="home" size={24} color="#2e7d32" />
         <Text style={styles.tabText}>Home</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.tab}>
+      <TouchableOpacity style={styles.tab} onPress={() => navigation.navigate('Report')}>
         <Ionicons name="document-text-outline" size={24} color="#4caf50" />
         <Text style={[styles.tabText, styles.inactiveText]}>Report</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.tab}>
+      <TouchableOpacity style={styles.tab} onPress={() => navigation.navigate('Contacts')}>
         <Ionicons name="people-outline" size={24} color="#4caf50" />
         <Text style={[styles.tabText, styles.inactiveText]}>Contacts</Text>
       </TouchableOpacity>
-      <TouchableOpacity style={styles.tab}>
+      <TouchableOpacity style={styles.tab} onPress={() => navigation.navigate('Profile')}>
         <Ionicons name="person-outline" size={24} color="#4caf50" />
         <Text style={[styles.tabText, styles.inactiveText]}>Profile</Text>
       </TouchableOpacity>

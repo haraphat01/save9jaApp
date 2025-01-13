@@ -1,11 +1,8 @@
 import React from 'react';
 import { SafeAreaView, ScrollView, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
-import EmergencyAction from './EmergencyAction';
-import QuickAccess from './QuickAccess';
 import LocationStatus from './LocationStatus';
 import IncidentHistory from './IncidentHistory';
-import InfoSection from './InfoSection';
 import Footer from './Footer';
 
 const WelcomeScreen = ({ navigation }) => (
@@ -33,9 +30,7 @@ const WelcomeScreen = ({ navigation }) => (
         <IncidentHistory />
       </View>
 
-      <View style={styles.sectionContainer}>
-        <InfoSection />
-      </View>
+     
     </ScrollView>
     <Footer />
   </SafeAreaView>
@@ -49,7 +44,7 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     padding: 16,
-    paddingTop: 30, // Added top padding for better spacing on mobile
+    paddingTop: 50, // Increased top padding for more space
   },
   headerContainer: {
     alignItems: 'center',
@@ -72,17 +67,18 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   emergencyButton: {
-    width: '90%',
-    aspectRatio: 1,
+    width: 180,
+    height: 180,
     backgroundColor: 'green',
     justifyContent: 'center',
     alignItems: 'center',
-    borderRadius: 10,
+    borderRadius: 90, // Makes the button circular
   },
   emergencyText: {
     color: 'white',
     fontSize: 24,
     fontWeight: 'bold',
+    textAlign: 'center',
   },
   sectionContainer: {
     marginVertical: 10,
