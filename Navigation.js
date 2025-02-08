@@ -9,7 +9,7 @@ import HomeScreen from './components/HomeScreen';
 import OtpVerificationScreen from './components/OtpScreen';
 import ProfilePage from './components/ProfilePage'
 import PersonalDetails from './components/PersonalDetails';
-import EmergencyContactsPage from './components/EmergencyContactsPage';
+import EmergencyContactsModal from './components/modal/EmergencyContactsModal';
 const Stack = createStackNavigator();
 
 const Navigation = () => {
@@ -25,7 +25,7 @@ const Navigation = () => {
         <Stack.Screen name="Profile" component={ProfilePage} options={{ headerShown: false }} />
         <Stack.Screen name="PersonalDetails" component={PersonalDetails} options={{ headerShown: false }} />
 
-        <Stack.Screen name="Emergency" component={EmergencyContactsPage} options={{ headerShown: false }} />
+        <Stack.Screen name="Emergency" component={EmergencyContactsModal} options={{ headerShown: false }} />
 
       </Stack.Navigator>
     </NavigationContainer>
