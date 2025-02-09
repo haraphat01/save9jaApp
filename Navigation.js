@@ -10,6 +10,8 @@ import OtpVerificationScreen from './components/OtpScreen';
 import ProfilePage from './components/ProfilePage'
 import PersonalDetails from './components/PersonalDetails';
 import EmergencyContactsModal from './components/modal/EmergencyContactsModal';
+import IncidentHistory from './components/IncidentHistory';
+
 const Stack = createStackNavigator();
 
 const Navigation = () => {
@@ -24,6 +26,7 @@ const Navigation = () => {
         <Stack.Screen name="Otp" component={OtpVerificationScreen} options={{ headerShown: false }} />
         <Stack.Screen name="Profile" component={ProfilePage} options={{ headerShown: false }} />
         <Stack.Screen name="PersonalDetails" component={PersonalDetails} options={{ headerShown: false }} />
+        <Stack.Screen name="Report" component={IncidentHistory} options={{ headerShown: false }} />
 
         <Stack.Screen name="Emergency" component={EmergencyContactsModal} options={{ headerShown: false }} />
 

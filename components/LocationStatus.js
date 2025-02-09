@@ -33,7 +33,7 @@ export default function LocationStatus() {
   const fetchAddress = async (lat, lng) => {
     try {
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=`
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=AIzaSyDnulN971D1d7iOzl_9NQcPUhTteiHzumg`
       );
       const data = await response.json();
       if (data.results.length > 0) {

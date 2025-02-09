@@ -2,7 +2,7 @@ import React from 'react';
 import { SafeAreaView, ScrollView, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import LocationStatus from './LocationStatus';
-import IncidentHistory from './IncidentHistory';
+import EmergencyButton from './EmmergencyButton';
 import Footer from './Footer';
 
 const WelcomeScreen = ({ navigation }) => (
@@ -15,22 +15,18 @@ const WelcomeScreen = ({ navigation }) => (
       </View>
 
       <View style={styles.emergencyContainer}>
-        <TouchableOpacity style={styles.emergencyButton} onPress={() => navigation.navigate('Emergency')}>
-          <Text style={styles.emergencyText}>Tap Emergency</Text>
-        </TouchableOpacity>
+        <EmergencyButton />
       </View>
 
-     
+
 
       <View style={styles.sectionContainer}>
         <LocationStatus />
       </View>
 
-      <View style={styles.sectionContainer}>
-        <IncidentHistory />
-      </View>
 
-     
+
+
     </ScrollView>
     <Footer />
   </SafeAreaView>
