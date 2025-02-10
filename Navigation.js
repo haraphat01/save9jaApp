@@ -11,6 +11,7 @@ import ProfilePage from './components/ProfilePage'
 import PersonalDetails from './components/PersonalDetails';
 import EmergencyContactsModal from './components/modal/EmergencyContactsModal';
 import IncidentHistory from './components/IncidentHistory';
+import ManageContacts from './components/ManageContacts';
 
 const Stack = createStackNavigator();
 
@@ -29,6 +30,7 @@ const Navigation = () => {
         <Stack.Screen name="Report" component={IncidentHistory} options={{ headerShown: false }} />
 
         <Stack.Screen name="Emergency" component={EmergencyContactsModal} options={{ headerShown: false }} />
+        <Stack.Screen name="Delete" component={ManageContacts} options={{ headerShown: false }} />
 
       </Stack.Navigator>
     </NavigationContainer>

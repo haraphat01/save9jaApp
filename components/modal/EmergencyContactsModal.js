@@ -17,7 +17,7 @@ import { Ionicons } from '@expo/vector-icons';
 export default function EmergencyContactsModal({ visible, onClose }) {
   const [contact, setContact] = useState({
     name: '',
-    phoneNumber: '+234',
+    phone: '+234',
     email: '',
     relationship: '',
   });
@@ -40,18 +40,18 @@ export default function EmergencyContactsModal({ visible, onClose }) {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${authToken}`,
         },
-        body: JSON.stringify([contact]), // Send as array to maintain API compatibility
+        body: JSON.stringify(contact), // Send as array to maintain API compatibility
       });
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || 'Network response was not ok');
+        throw new Error(errorData.message);
       }
 
       Alert.alert('Success', 'Emergency contact saved successfully!');
       onClose(); // Close modal after successful save
     } catch (error) {
-      Alert.alert('Error', error.message || 'Failed to save contact. Please try again.');
+      Alert.alert('Error', error.message || 'Failed to save contact. You already have 3 contacts');
     }
   };
 
