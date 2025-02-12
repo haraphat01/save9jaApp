@@ -1,4 +1,6 @@
 import React from 'react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query'; // Import QueryClient
+
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import WelcomeScreen from './components/WelcomeScreen';
@@ -14,26 +16,29 @@ import IncidentHistory from './components/IncidentHistory';
 import ManageContacts from './components/ManageContacts';
 
 const Stack = createStackNavigator();
+const queryClient = new QueryClient();
 
 const Navigation = () => {
   return (
-    <NavigationContainer>
-      <Stack.Navigator initialRouteName="Welcome">
-        <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="Otp" component={OtpVerificationScreen} options={{ headerShown: false }} />
-        <Stack.Screen name="Profile" component={ProfilePage} options={{ headerShown: false }} />
-        <Stack.Screen name="PersonalDetails" component={PersonalDetails} options={{ headerShown: false }} />
-        <Stack.Screen name="Report" component={IncidentHistory} options={{ headerShown: false }} />
+    <QueryClientProvider client={queryClient}>
+      <NavigationContainer>
+        <Stack.Navigator initialRouteName="Welcome">
+          <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Home" component={HomeScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Otp" component={OtpVerificationScreen} options={{ headerShown: false }} />
+          <Stack.Screen name="Profile" component={ProfilePage} options={{ headerShown: false }} />
+          <Stack.Screen name="PersonalDetails" component={PersonalDetails} options={{ headerShown: false }} />
+          <Stack.Screen name="Report" component={IncidentHistory} options={{ headerShown: false }} />
 
-        <Stack.Screen name="Emergency" component={EmergencyContactsModal} options={{ headerShown: false }} />
-        <Stack.Screen name="Delete" component={ManageContacts} options={{ headerShown: false }} />
+          <Stack.Screen name="Emergency" component={EmergencyContactsModal} options={{ headerShown: false }} />
+          <Stack.Screen name="Delete" component={ManageContacts} options={{ headerShown: false }} />
 
-      </Stack.Navigator>
-    </NavigationContainer>
+        </Stack.Navigator>
+      </NavigationContainer>
+    </QueryClientProvider>
   );
 };
 

@@ -30,7 +30,8 @@
     "extra": {
       "eas": {
         "projectId": "b01475b0-3e77-47df-a299-dc67623afcc5"
-      }
+      },
+      "googleMapsApiKey": "AIzaSyDnulN971D1d7iOzl_9NQcPUhTteiHzumg"
     },
     "owner": "haraphat01"
   }

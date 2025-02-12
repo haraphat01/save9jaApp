@@ -1,45 +1,34 @@
-import React, { useState, useEffect } from "react";
+import React from "react";
 import { View, Text, FlatList, TouchableOpacity, Alert, StyleSheet } from "react-native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { baseUrl } from "../constant/constant";
-// Function to fetch contacts
+
+// Fetch contacts function
 const fetchContacts = async () => {
     const token = await AsyncStorage.getItem("authToken");
+    if (!token) throw new Error("User token not found.");
 
-    if (!token) {
-        throw new Error("User token not found.");
-    }
+    const response = await fetch(`${baseUrl}/api/contacts`, {
+        method: "GET",
+        headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${token}`,
+        },
+    });
 
-    try {
-        const response = await fetch(`${baseUrl}/api/contacts`, {
-            method: "GET",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${token}`,
-            },
-        });
+    if (!response.ok) throw new Error("Failed to fetch contacts");
 
-        if (!response.ok) {
-            throw new Error("Failed to fetch contacts");
-        }
-
-        const data = await response.json();
-        return data?.contacts || []; // Return contacts or empty array if not found
-    } catch (error) {
-        console.error("Error fetching contacts:", error);
-        return []; // Return an empty array in case of an error
-    }
+    const data = await response.json();
+    return data?.contacts || [];
 };
 
-// Function to delete a contact
+// Delete contact function
 const deleteContact = async (contactId) => {
     const token = await AsyncStorage.getItem("authToken");
+    if (!token) throw new Error("User token not found.");
 
-    if (!token) {
-        throw new Error("User token not found.");
-    }
-
-    const response = await fetch(`http://192.168.0.3:3000/api/contacts?id=${contactId}`, {
+    const response = await fetch(`${baseUrl}/api/contacts?id=${contactId}`, {
         method: "DELETE",
         headers: {
             "Content-Type": "application/json",
@@ -47,55 +36,40 @@ const deleteContact = async (contactId) => {
         },
     });
 
-    if (!response.ok) {
-        throw new Error("Failed to delete contact");
-    }
+    if (!response.ok) throw new Error("Failed to delete contact");
 
-    return response.json(); // Assuming API returns { message: "Deleted" }
+    return response.json(); 
 };
 
 export default function ManageContacts() {
-    const [contacts, setContacts] = useState([]);
-    const [isLoading, setIsLoading] = useState(true);
-    const [error, setError] = useState(null);
+    const queryClient = useQueryClient();
 
-    // Fetch contacts on mount
-    useEffect(() => {
-        const getContacts = async () => {
-            try {
-                setIsLoading(true);
-                const fetchedContacts = await fetchContacts();
-                setContacts(fetchedContacts);
-                setIsLoading(false);
-            } catch (error) {
-                setIsLoading(false);
-                setError(error.message);
-            }
-        };
+    // Fetch contacts with React Query
+    const { data: contacts, isLoading, error } = useQuery({
+        queryKey: ["contacts"],
+        queryFn: fetchContacts,
+    });
 
-        getContacts();
-    }, []); // Run only once when the component mounts
-
-    // Handle deleting a contact
-    const handleDelete = async (contactId) => {
-        try {
-            await deleteContact(contactId);
-            // Remove the contact from the state after successful deletion
-            setContacts((prevContacts) => prevContacts.filter((contact) => contact._id !== contactId));
-        } catch (error) {
+    // Mutation for deleting a contact
+    const mutation = useMutation({
+        mutationFn: deleteContact,
+        onSuccess: () => {
+            queryClient.invalidateQueries(["contacts"]); // Refetch contacts after deletion
+        },
+        onError: (error) => {
             Alert.alert("Error", error.message);
-        }
-    };
+        },
+    });
 
     return (
         <View style={styles.container}>
             <Text style={styles.header}>Manage Contacts</Text>
 
             {isLoading && <Text>Loading contacts...</Text>}
-            {error && <Text>Error: {error}</Text>}
+            {error && <Text>Error: {error.message}</Text>}
 
             <FlatList
-                data={contacts}
+                data={contacts || []}
                 keyExtractor={(item) => item._id}
                 renderItem={({ item }) => (
                     <View style={styles.contactCard}>
@@ -106,7 +80,7 @@ export default function ManageContacts() {
 
                         <TouchableOpacity
                             style={styles.deleteButton}
-                            onPress={() => handleDelete(item._id)}
+                            onPress={() => mutation.mutate(item._id)}
                         >
                             <Text style={styles.deleteButtonText}>Delete</Text>
                         </TouchableOpacity>
@@ -121,20 +95,20 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         padding: 20,
-        backgroundColor: '#F9F9F9',
+        backgroundColor: "#F9F9F9",
     },
     header: {
         fontSize: 24,
-        fontWeight: 'bold',
-        color: 'green',
+        fontWeight: "bold",
+        color: "green",
         marginBottom: 20,
     },
     contactCard: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: "#FFFFFF",
         padding: 15,
         borderRadius: 8,
         marginBottom: 15,
-        shadowColor: '#000',
+        shadowColor: "#000",
         shadowOpacity: 0.1,
         shadowRadius: 5,
         shadowOffset: { width: 0, height: 2 },
@@ -142,35 +116,35 @@ const styles = StyleSheet.create({
     },
     contactName: {
         fontSize: 18,
-        fontWeight: 'bold',
-        color: '#333',
+        fontWeight: "bold",
+        color: "#333",
         marginBottom: 5,
     },
     contactDetail: {
         fontSize: 14,
-        color: '#555',
+        color: "#555",
         marginBottom: 3,
     },
     relationship: {
         fontSize: 14,
-        color: '#777',
-        fontStyle: 'italic',
+        color: "#777",
+        fontStyle: "italic",
         marginBottom: 10,
     },
     deleteButton: {
-        backgroundColor: 'red',
+        backgroundColor: "red",
         paddingVertical: 10,
         borderRadius: 8,
-        alignItems: 'center',
-        shadowColor: '#000',
+        alignItems: "center",
+        shadowColor: "#000",
         shadowOpacity: 0.1,
         shadowRadius: 5,
         shadowOffset: { width: 0, height: 2 },
         elevation: 3,
     },
     deleteButtonText: {
-        color: 'white',
+        color: "white",
         fontSize: 14,
-        fontWeight: '600',
+        fontWeight: "600",
     },
 });

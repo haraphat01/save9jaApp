@@ -1,16 +1,8 @@
 import React from 'react';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'; // Import QueryClient
-import Navigation from './Navigation'; // Your Navigation component
-
-// Create a QueryClient instance
-const queryClient = new QueryClient();
+import Navigation from './Navigation';
 
 const App = () => {
-  return (
-    <QueryClientProvider client={queryClient}>
-      <Navigation /> {/* Wrap your Navigation component */}
-    </QueryClientProvider>
-  );
+  return <Navigation />;
 };
 
 export default App;

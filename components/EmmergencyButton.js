@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { TouchableOpacity, Text, StyleSheet, View, FlatList, Alert } from 'react-native';
+import React, { useState, useRef, useEffect } from 'react';
+import { TouchableOpacity, Text, StyleSheet, View, FlatList, Alert, SafeAreaView } from 'react-native';
 import { Audio } from 'expo-av';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,6 +11,10 @@ export default function EmergencyButton() {
   const recordingRef = useRef(null);
   const intervalRef = useRef(null);
   const soundRef = useRef(null);
+
+  useEffect(() => {
+    loadSavedRecordings();
+  }, []);
 
   const loadSavedRecordings = async () => {
     try {
@@ -25,9 +29,6 @@ export default function EmergencyButton() {
 
   const startRecording = async () => {
     try {
-      // Load any existing recordings first
-      await loadSavedRecordings();
-
       const permissionResponse = await Audio.requestPermissionsAsync();
       if (permissionResponse.status !== 'granted') {
         Alert.alert('Permission required', 'Please grant access to the microphone');
@@ -61,7 +62,7 @@ export default function EmergencyButton() {
         await recordingRef.current.stopAndUnloadAsync();
         const uri = recordingRef.current.getURI();
         const timestamp = new Date().toISOString();
-        
+
         const newRecordings = [...recordings, { uri, timestamp }];
         setRecordings(newRecordings);
         await AsyncStorage.setItem('emergency-recordings', JSON.stringify(newRecordings));
@@ -87,11 +88,11 @@ export default function EmergencyButton() {
         await recordingRef.current.stopAndUnloadAsync();
         const uri = recordingRef.current.getURI();
         const timestamp = new Date().toISOString();
-        
+
         const newRecordings = [...recordings, { uri, timestamp }];
         setRecordings(newRecordings);
         await AsyncStorage.setItem('emergency-recordings', JSON.stringify(newRecordings));
-        
+
         recordingRef.current = null;
       }
 
@@ -115,7 +116,7 @@ export default function EmergencyButton() {
 
       const sound = new Audio.Sound();
       await sound.loadAsync({ uri });
-      
+
       sound.setOnPlaybackStatusUpdate((status) => {
         if (status.didJustFinish) {
           setCurrentlyPlaying(null);
@@ -156,8 +157,8 @@ export default function EmergencyButton() {
       'Are you sure you want to delete this recording?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Delete', 
+        {
+          text: 'Delete',
           onPress: () => deleteRecording(timestamp),
           style: 'destructive'
         }
@@ -166,58 +167,63 @@ export default function EmergencyButton() {
   };
 
   return (
-    <View style={styles.container}>
-      <TouchableOpacity
-        style={[
-          styles.emergencyButton,
-          isRecording && styles.emergencyButtonActive
-        ]}
-        onPress={isRecording ? stopRecording : startRecording}
-      >
-        <Text style={styles.emergencyText}>
-          {isRecording ? 'Stop Emergency' : 'Tap Emergency'}
-        </Text>
-      </TouchableOpacity>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
+        <TouchableOpacity
+          style={[
+            styles.emergencyButton,
+            isRecording && styles.emergencyButtonActive
+          ]}
+          onPress={isRecording ? stopRecording : startRecording}
+        >
+          <Text style={styles.emergencyText}>
+            {isRecording ? 'Stop Emergency' : 'Tap Emergency'}
+          </Text>
+        </TouchableOpacity>
 
-      {recordings.length > 0 && (
-        <View style={styles.recordingsContainer}>
-          <Text style={styles.recordingsTitle}>Recent Recordings</Text>
-          <FlatList
-            data={recordings}
-            keyExtractor={(item) => item.timestamp}
-            renderItem={({ item }) => (
-              <View style={styles.recordingItem}>
-                <TouchableOpacity
-                  style={styles.playButton}
-                  onPress={() => togglePlayback(item.uri)}
-                >
-                  <Ionicons 
-                    name={currentlyPlaying === item.uri ? "stop-circle-outline" : "play-circle-outline"} 
-                    size={24} 
-                    color="green" 
-                  />
-                </TouchableOpacity>
-                <Text style={styles.recordingTimestamp}>
-                  {new Date(item.timestamp).toLocaleString()}
-                </Text>
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={() => confirmDelete(item.timestamp)}
-                >
-                  <Ionicons name="trash-outline" size={24} color="red" />
-                </TouchableOpacity>
-              </View>
-            )}
-          />
-        </View>
-      )}
-    </View>
+        <Text style={styles.recordingsTitle}>Recent Recordings</Text>
+
+        <FlatList
+          data={recordings}
+          keyExtractor={(item) => item.timestamp}
+          renderItem={({ item }) => (
+            <View style={styles.recordingItem}>
+              <TouchableOpacity
+                style={styles.playButton}
+                onPress={() => togglePlayback(item.uri)}
+              >
+                <Ionicons
+                  name={currentlyPlaying === item.uri ? "stop-circle-outline" : "play-circle-outline"}
+                  size={24}
+                  color="green"
+                />
+              </TouchableOpacity>
+              <Text style={styles.recordingTimestamp}>
+                {new Date(item.timestamp).toLocaleString()}
+              </Text>
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={() => confirmDelete(item.timestamp)}
+              >
+                <Ionicons name="trash-outline" size={24} color="red" />
+              </TouchableOpacity>
+            </View>
+          )}
+          contentContainerStyle={styles.flatListContentContainer} // Add contentContainerStyle
+        />
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
+  safeArea: {
+    flex: 1,
+  },
   container: {
+    flex: 1,
     alignItems: 'center',
+    paddingVertical: 20,
   },
   emergencyButton: {
     width: 180,
@@ -226,6 +232,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 90,
+    marginBottom: 20, // Add margin below the button
   },
   emergencyButtonActive: {
     backgroundColor: 'red',
@@ -236,16 +243,12 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
   },
-  recordingsContainer: {
-    width: '100%',
-    marginTop: 20,
-    padding: 10,
-  },
   recordingsTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 10,
     color: 'green',
+    textAlign: 'center',
   },
   recordingItem: {
     flexDirection: 'row',
@@ -254,16 +257,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
   },
-  recordingTimestamp: {
-    flex: 1,
-    marginLeft: 10,
-    color: '#666',
-  },
   playButton: {
     padding: 5,
   },
   deleteButton: {
     padding: 5,
     marginLeft: 10,
-  }
+  },
+  flatListContentContainer: { // Style for contentContainerStyle
+    flexGrow: 1,          // Ensure it can grow to fill the space
+    justifyContent: 'flex-start', // Align items at the top
+    width: '100%',       // Take full width
+  },
 });

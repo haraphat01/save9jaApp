@@ -3,6 +3,7 @@ import { SafeAreaView, ScrollView, View, Text, TouchableOpacity, StyleSheet } fr
 import { StatusBar } from 'expo-status-bar';
 import LocationStatus from './LocationStatus';
 import EmergencyButton from './EmmergencyButton';
+import EmergencyDashboard from './EmergencyDashboard';
 import Footer from './Footer';
 
 const WelcomeScreen = ({ navigation }) => (
@@ -14,15 +15,15 @@ const WelcomeScreen = ({ navigation }) => (
         <Text style={styles.subtitle}>Your Safety, Our Priority</Text>
       </View>
 
-      <View style={styles.emergencyContainer}>
-        <EmergencyButton />
-      </View>
+     
+        <EmergencyDashboard />
+      
 
 
 
-      <View style={styles.sectionContainer}>
+      {/* <View style={styles.sectionContainer}>
         <LocationStatus />
-      </View>
+      </View> */}
 
 
 
