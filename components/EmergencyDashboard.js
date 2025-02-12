@@ -334,7 +334,7 @@ export default function EmergencyDashboard() {
   const fetchAddress = async (lat, lng) => {
     try {
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=AIzaSyDnulN971D1d7iOzl_9NQcPUhTteiHzumg` // Replace with your API Key
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=AIzaSyDnulN971D1d7iOzl_9NQcPUhTteiHzu` // Replace with your API Key
       );
       const data = await response.json();
       if (data.results.length > 0) {
