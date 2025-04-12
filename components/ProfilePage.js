@@ -29,10 +29,7 @@ const ProfilePage = ({ navigation }) => {
           <Text style={styles.sectionDescription}>Manage your personal information</Text>
         </TouchableOpacity>
         
-        <TouchableOpacity style={styles.section} onPress={() => setIsModalVisible(true)}>
-          <Text style={styles.sectionTitle}>Emergency Contacts</Text>
-          <Text style={styles.sectionDescription}>Add emergency contacts</Text>
-        </TouchableOpacity>
+       
         
         <TouchableOpacity style={styles.section} onPress={() => navigateTo('Delete')}>
           <Text style={styles.sectionTitle}>Manage Contacts</Text>

@@ -11,16 +11,16 @@ import HomeScreen from './components/HomeScreen';
 import OtpVerificationScreen from './components/OtpScreen';
 import ProfilePage from './components/ProfilePage'
 import PersonalDetails from './components/PersonalDetails';
-import EmergencyContactsModal from './components/modal/EmergencyContactsModal';
 import IncidentHistory from './components/IncidentHistory';
 import ManageContacts from './components/ManageContacts';
-
+import ContactPage from './components/ContactPage';
 const Stack = createStackNavigator();
 const queryClient = new QueryClient();
 
 const Navigation = () => {
   return (
     <QueryClientProvider client={queryClient}>
+    
       <NavigationContainer>
         <Stack.Navigator initialRouteName="Welcome">
           <Stack.Screen name="Welcome" component={WelcomeScreen} options={{ headerShown: false }} />
@@ -32,8 +32,7 @@ const Navigation = () => {
           <Stack.Screen name="Profile" component={ProfilePage} options={{ headerShown: false }} />
           <Stack.Screen name="PersonalDetails" component={PersonalDetails} options={{ headerShown: false }} />
           <Stack.Screen name="Report" component={IncidentHistory} options={{ headerShown: false }} />
-
-          <Stack.Screen name="Emergency" component={EmergencyContactsModal} options={{ headerShown: false }} />
+          <Stack.Screen name="Contacts" component={ContactPage} options={{ headerShown: false }} />
           <Stack.Screen name="Delete" component={ManageContacts} options={{ headerShown: false }} />
 
         </Stack.Navigator>

@@ -21,7 +21,7 @@ extensions.configure(com.facebook.react.ReactSettingsExtension) { ex ->
   }
 }
 
-rootProject.name = 'save9jaApp'
+rootProject.name = 'Safe9jaApp'
 
 dependencyResolutionManagement {
   versionCatalogs {

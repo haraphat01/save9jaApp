@@ -1,4 +1,4 @@
-package com.yournamespace.save9ja
+package com.yournamespace.Safe9ja
 
 import android.os.Build
 import android.os.Bundle

@@ -29,7 +29,7 @@ const WelcomeScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.messageContainer}>
-        <Text style={styles.title}>Welcome to Save9ja</Text>
+        <Text style={styles.title}>Welcome to Safe9ja</Text>
         <Text style={styles.subtitle}>Your Safety, Our Priority</Text>
       </View>
       <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('Onboarding')}>

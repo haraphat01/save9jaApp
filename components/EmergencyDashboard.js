@@ -11,11 +11,13 @@ import * as Battery from 'expo-battery';
 import * as Network from 'expo-network';
 import { Linking } from 'react-native';
 import { CircularProgress } from '@mui/material'; // Import web spinner (install with `npm install @mui/material @emotion/react @emotion/styled`)
-
+import { baseUrl } from '../constant/constant'
+import * as FileSystem from 'expo-file-system';
 // Import sensor modules
 import { Accelerometer } from 'expo-sensors';
-import { Gyroscope } from 'expo-sensors';
-import { Barometer } from 'expo-sensors';
+import { Gyroscope, Barometer } from 'expo-sensors';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+
 
 export default function EmergencyDashboard() {
   // Recording State and Functions
@@ -34,7 +36,6 @@ export default function EmergencyDashboard() {
 
   // Battery State
   const [batteryLevel, setBatteryLevel] = useState(null);
-  const [batteryState, setBatteryState] = useState(null);
   const [estimatedTimeRemaining, setEstimatedTimeRemaining] = useState(null);
   const [isLowPowerMode, setIsLowPowerMode] = useState(false);
 
@@ -64,21 +65,16 @@ export default function EmergencyDashboard() {
     location: null,
     address: null,
     batteryLevel: null,
-    batteryState: null,
     networkInfo: null,
     fallDetected: false,
     altitudeChange: null,
     impactDetected: false,
-    recordingUri: null
+    recording: null // Changed from recordingUri to recording: null
   });
 
   // Load saved recordings on mount
   useEffect(() => {
     loadSavedRecordings();
-  }, []);
-
-  // Location and Battery Effects
-  useEffect(() => {
     const getLocationAndBattery = async () => {
       await fetchLocation();
       await updateBatteryInfo();
@@ -87,71 +83,17 @@ export default function EmergencyDashboard() {
 
     getLocationAndBattery();
     const intervalId = setInterval(getLocationAndBattery, 60000);  //Update Location and Battery every minute
-
-    return () => clearInterval(intervalId); // Cleanup interval
+    return () => clearInterval(intervalId);
+    setupSensors();
   }, []);
 
-  const sensorInterval = 200; // Milliseconds
-
   useEffect(() => {
-    // Accelerometer
-    Accelerometer.setUpdateInterval(sensorInterval);
-    const accelerometerSubscription = Accelerometer.addListener(data => {
-      setAccelerometerData(data);
-
-      // Fall Detection Logic
-      const combinedAcceleration = Math.sqrt(data.x * data.x + data.y * data.y + data.z * data.z);
-      if (combinedAcceleration > FALL_THRESHOLD) {
-        setFallDetected(true);
-        setTimeout(() => setFallDetected(false), 3000); // Reset after 3 seconds
-      }
-      if (combinedAcceleration > IMPACT_THRESHOLD) {
-        setImpactDetected(true);
-        setTimeout(() => setImpactDetected(false), 3000);
-      }
-    });
-
-    // Gyroscope
-    Gyroscope.setUpdateInterval(sensorInterval);
-    const gyroscopeSubscription = Gyroscope.addListener(data => {
-      setGyroscopeData(data);
-    });
-
-    // Barometer
-    Barometer.setUpdateInterval(sensorInterval);
-    const barometerSubscription = Barometer.addListener(async data => {
-      setBarometerData(data.pressure);
-
-      // Convert pressure to altitude (approximate)
-      const altitude = 44330 * (1 - Math.pow(data.pressure / 1013.25, 0.1903)); // Rough calculation
-      if (previousAltitude !== null) {
-        const change = altitude - previousAltitude;
-        if (Math.abs(change) > ALTITUDE_CHANGE_THRESHOLD) {
-          setAltitudeChange(change);
-          setTimeout(() => setAltitudeChange(null), 5000); //Clear after 5 seconds
-        }
-      }
-      setPreviousAltitude(altitude);
-    });
-
-    let batterySubscription;
-    const subscribeToBattery = async () => {
-      batterySubscription = Battery.addBatteryStateListener(({ batteryState }) => {
-        updateBatteryInfo();
-      });
-    };
-
-    subscribeToBattery();
-
-    return () => {
-      accelerometerSubscription.remove();
-      gyroscopeSubscription.remove();
-      barometerSubscription.remove();
-      if (batterySubscription) {
-        batterySubscription.remove();
-      }
-    };
-  }, [previousAltitude]);
+    // This effect will run whenever `isRecording` changes to false
+    if (!isRecording && recordings.length > 0) {
+      const lastRecordingUri = recordings[recordings.length - 1].uri; //Get the last recording made
+      sendEmergencyData(lastRecordingUri); //Send the data to the server
+    }
+  }, [isRecording, recordings]);
 
   const loadSavedRecordings = async () => {
     try {
@@ -162,6 +104,53 @@ export default function EmergencyDashboard() {
     } catch (error) {
       console.error('Failed to load recordings', error);
     }
+  };
+
+  const setupSensors = () => {
+    const sensorInterval = 200;
+    Accelerometer.setUpdateInterval(sensorInterval);
+    Gyroscope.setUpdateInterval(sensorInterval);
+    Barometer.setUpdateInterval(sensorInterval);
+
+    Accelerometer.addListener(handleAccelerometerData);
+    Gyroscope.addListener(handleGyroscopeData);
+    Barometer.addListener(handleBarometerData);
+
+    return () => {
+      Accelerometer.removeAllListeners();
+      Gyroscope.removeAllListeners();
+      Barometer.removeAllListeners();
+    };
+  };
+
+  const handleAccelerometerData = (data) => {
+    setAccelerometerData(data);
+    const combinedAcceleration = Math.sqrt(data.x * data.x + data.y * data.y + data.z * data.z);
+    if (combinedAcceleration > FALL_THRESHOLD) {
+      setFallDetected(true);
+      setTimeout(() => setFallDetected(false), 3000); // Reset after 3 seconds
+    }
+    if (combinedAcceleration > IMPACT_THRESHOLD) {
+      setImpactDetected(true);
+      setTimeout(() => setImpactDetected(false), 3000);
+    }
+  };
+
+  const handleGyroscopeData = (data) => {
+    setGyroscopeData(data);
+  };
+
+  const handleBarometerData = async (data) => {
+    setBarometerData(data.pressure);
+    const altitude = 44330 * (1 - Math.pow(data.pressure / 1013.25, 0.1903));
+    if (previousAltitude !== null) {
+      const change = altitude - previousAltitude;
+      if (Math.abs(change) > ALTITUDE_CHANGE_THRESHOLD) {
+        setAltitudeChange(change);
+        setTimeout(() => setAltitudeChange(null), 5000);
+      }
+    }
+    setPreviousAltitude(altitude);
   };
 
   const startRecording = async () => {
@@ -185,7 +174,7 @@ export default function EmergencyDashboard() {
 
       intervalRef.current = setInterval(async () => {
         await stopCurrentAndStartNewRecording();
-      }, 120000);
+      }, 60000);
 
     } catch (error) {
       console.error('Failed to start recording', error);
@@ -203,9 +192,6 @@ export default function EmergencyDashboard() {
         const newRecordings = [...recordings, { uri, timestamp }];
         setRecordings(newRecordings);
         await AsyncStorage.setItem('emergency-recordings', JSON.stringify(newRecordings));
-
-        // Send the data with the new recording
-        await sendEmergencyData(uri);
 
         const newRecording = new Audio.Recording();
         await newRecording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
@@ -234,9 +220,6 @@ export default function EmergencyDashboard() {
         await AsyncStorage.setItem('emergency-recordings', JSON.stringify(newRecordings));
 
         recordingRef.current = null;
-
-        // Send the data with the last recording upon stopping
-        await sendEmergencyData(uri);
       }
 
       setIsRecording(false);
@@ -334,7 +317,7 @@ export default function EmergencyDashboard() {
   const fetchAddress = async (lat, lng) => {
     try {
       const response = await fetch(
-        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=AIzaSyDnulN971D1d7iOzl_9NQcPUhTteiHzu` // Replace with your API Key
+        `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&key=AIzaSyDnulN971D1d7iOzl_9NQcPUhTteiHzumg` // Replace with your API Key
       );
       const data = await response.json();
       if (data.results.length > 0) {
@@ -352,22 +335,10 @@ export default function EmergencyDashboard() {
   const updateBatteryInfo = async () => {
     try {
       const level = await Battery.getBatteryLevelAsync();
-      const state = await Battery.getBatteryStateAsync();
-      const lowPowerMode = await Battery.isLowPowerModeEnabledAsync();
-
       setBatteryLevel(level);
-      setBatteryState(state);
-      setIsLowPowerMode(lowPowerMode);
-
-      if (state === Battery.BatteryState.CHARGING) {
-        const hoursToFull = ((1 - level) * 2).toFixed(1);
-        setEstimatedTimeRemaining(`~${hoursToFull}h until full`);
-      } else {
-        const hoursRemaining = (level * 12).toFixed(1);
-        setEstimatedTimeRemaining(`~${hoursRemaining}h remaining`);
-      }
     } catch (error) {
       console.error('Error fetching battery info:', error);
+      setBatteryLevel(null);
     }
   };
 
@@ -392,9 +363,6 @@ export default function EmergencyDashboard() {
   };
 
   const getBatteryStateIcon = () => {
-    if (batteryState === Battery.BatteryState.CHARGING) {
-      return 'battery-charging';
-    }
     if (batteryLevel > 0.75) return 'battery-full';
     if (batteryLevel > 0.5) return 'battery-half';
     if (batteryLevel > 0.2) return 'battery-quarter';
@@ -402,7 +370,6 @@ export default function EmergencyDashboard() {
   };
 
   const getBatteryColor = () => {
-    if (batteryState === Battery.BatteryState.CHARGING) return '#4CD964';
     if (batteryLevel <= 0.2) return '#FF3B30';
     if (batteryLevel <= 0.5) return '#FF9500';
     return '#4CD964';
@@ -410,37 +377,67 @@ export default function EmergencyDashboard() {
 
   // Function to send emergency data to the API
   const sendEmergencyData = async (recordingUri) => {
+    // Fetch fresh data before sending
+    await fetchLocation();
+    await updateBatteryInfo();
+    await getNetworkInfo();
+
+    const authToken = await AsyncStorage.getItem('authToken');
+
+    // Convert battery level to percentage
+    const batteryPercentage = batteryLevel !== null ? (batteryLevel * 100).toFixed(0) : null;
+
+    let base64Audio = null; // Variable to hold the Base64 audio data
+
+    // Convert audio file to Base64
+    if (recordingUri) {
+      try {
+        base64Audio = await FileSystem.readAsStringAsync(recordingUri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+        console.log("Successfully converted audio to base64");
+      } catch (error) {
+        console.error("Error converting audio to base64:", error);
+        Alert.alert("Error", "Failed to convert audio to base64");
+        base64Audio = null;  // Set to null to prevent sending incomplete data
+      }
+    }
+
     try {
       const data = {
         location: location,
         address: address,
-        batteryLevel: batteryLevel,
-        batteryState: batteryState,
+        batteryLevel: batteryPercentage, // Send percentage here
         networkInfo: networkInfo,
         fallDetected: fallDetected,
         altitudeChange: altitudeChange,
         impactDetected: impactDetected,
-        recordingUri: recordingUri
+        recording: base64Audio, // Send Base64 audio data here
       };
 
       //Set the emergency data state
       setEmergencyData(data);
+      console.log("Sending Emergency Data:", data);
 
-      const response = await fetch('/api/emergency', {  // Your Next.js API route
+      const response = await fetch(`${baseUrl}/api/emergency`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
         },
         body: JSON.stringify(data),
       });
 
       if (!response.ok) {
-        console.error('Failed to send emergency data:', response.status);
+        console.error('Failed to send emergency data:', response.status, await response.text()); // Log response text for debugging
+        Alert.alert("Error", "Failed to send emergency data. Status: " + response.status);
       } else {
         console.log('Emergency data sent successfully!');
+        Alert.alert("Success", "Emergency data sent successfully!");
       }
     } catch (error) {
       console.error('Error sending emergency data:', error);
+      Alert.alert("Error", "Error sending emergency data: " + error.message);
     }
   };
 
@@ -460,7 +457,7 @@ export default function EmergencyDashboard() {
           </Text>
         </TouchableOpacity>
 
-        <ScrollView 
+        <ScrollView
           style={styles.scrollContainer}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}
@@ -631,6 +628,10 @@ const styles = StyleSheet.create({
   emergencyButtonActive: {
     backgroundColor: '#FF5252', // More appealing red
   },
+  emergencyButtonDisabled: {
+    backgroundColor: '#cccccc', // Gray color to indicate disabled state
+    opacity: 0.7,
+  },
   emergencyText: {
     color: 'white',
     fontSize: 24,
@@ -758,5 +759,12 @@ const styles = StyleSheet.create({
   sensorInfo: {
     marginLeft: 26,
     marginTop: 4,
+  },
+  warningText: {
+    color: '#FF5252',
+    textAlign: 'center',
+    marginBottom: 20,
+    paddingHorizontal: 20,
+    fontSize: 14,
   },
 });

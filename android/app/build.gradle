@@ -86,9 +86,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.yournamespace.save9ja'
+    namespace 'com.yournamespace.Safe9ja'
     defaultConfig {
-        applicationId 'com.yournamespace.save9ja'
+        applicationId 'com.yournamespace.Safe9ja'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

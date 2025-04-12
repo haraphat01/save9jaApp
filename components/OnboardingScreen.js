@@ -21,9 +21,9 @@ const OnboardingScreen = ({ navigation }) => {
   const slides = [
     {
       id: '1',
-      title: 'Welcome to Save9ja',
+      title: 'Welcome to Safe9ja',
       text: 'Your personal safety companion that keeps you protected 24/7.',
-      details: 'Join thousands of Nigerians who trust Save9ja for their personal security.',
+      details: 'Join thousands of Nigerians who trust Safe9ja for their personal security.',
       image: require('../assets/security.jpg')
     },
     {

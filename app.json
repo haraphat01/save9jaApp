@@ -1,13 +1,13 @@
 {
   "expo": {
-    "name": "save9jaApp",
-    "slug": "save9ja",
+    "name": "Safe9jaApp",
+    "slug": "Safe9ja",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "scheme": "save9ja",
+    "scheme": "Safe9ja",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -15,14 +15,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.save9ja"
+      "bundleIdentifier": "com.Safe9ja"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.save9ja"
+      "package": "com.Safe9ja"
     },
     "web": {
       "favicon": "./assets/favicon.png"
