@@ -1,13 +1,13 @@
 {
   "expo": {
     "name": "Safe9jaApp",
-    "slug": "Safe9ja",
+    "slug": "safealert",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "scheme": "Safe9ja",
+    "scheme": "safealert",
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
@@ -33,6 +33,9 @@
       },
       "googleMapsApiKey": "AIzaSyDnulN971D1d7iOzl_9NQcPUhTteiHzumg"
     },
-    "owner": "haraphat01"
+    "owner": "haraphat01",
+    "plugins": [
+      "expo-web-browser"
+    ]
   }
 }

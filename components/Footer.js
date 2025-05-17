@@ -4,25 +4,32 @@ import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-const TabItem = ({ label, icon, isActive, onPress }) => (
-  <TouchableOpacity
-    style={[styles.tab, isActive && styles.activeTab]}
-    onPress={onPress}
-    activeOpacity={0.7}>
-    <View style={styles.iconContainer}>
-      <Ionicons
-        name={isActive ? icon.replace('-outline', '') : icon}
-        size={24}
-        color={isActive ? '#2E7D32' : '#4CAF50'}
-        style={styles.icon}
-      />
-      {isActive && <View style={styles.activeDot} />}
-    </View>
-    <Text style={[styles.tabText, isActive && styles.activeText]}>
-      {label}
-    </Text>
-  </TouchableOpacity>
-);
+const TabItem = ({ label, icon, isActive, onPress }) => {
+  return (
+    <TouchableOpacity
+      style={styles.tabItem}
+      onPress={onPress}
+      activeOpacity={0.7}
+    >
+      <View style={[
+        styles.iconContainer,
+        isActive && styles.activeIconContainer
+      ]}>
+        <Ionicons
+          name={isActive ? icon.replace('-outline', '') : icon}
+          size={24}
+          color={isActive ? '#4CAF50' : '#666'}
+        />
+      </View>
+      <Text style={[
+        styles.tabLabel,
+        isActive && styles.activeTabLabel
+      ]}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+};
 
 export default function Footer() {
   const navigation = useNavigation();
@@ -32,7 +39,7 @@ export default function Footer() {
   const tabs = [
     { label: 'Home', icon: 'home-outline', screen: 'Home' },
     { label: 'Report', icon: 'document-text-outline', screen: 'Report' },
-    { label: 'Contacts', icon: 'people-outline', screen: 'Contacts' },
+    { label: 'Contacts', icon: 'people-outline', screen: 'Delete' },
     { label: 'Profile', icon: 'person-outline', screen: 'Profile' },
   ];
 
@@ -65,18 +72,14 @@ export default function Footer() {
 const styles = StyleSheet.create({
   footer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: '#FFFFFF',
-    borderTopWidth: 1,
-    borderTopColor: '#E0E8E0',
+    backgroundColor: 'white',
     paddingTop: 8,
+    borderTopWidth: 1,
+    borderTopColor: '#E0E0E0',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOffset: {
-          width: 0,
-          height: -3,
-        },
+        shadowOffset: { width: 0, height: -2 },
         shadowOpacity: 0.1,
         shadowRadius: 4,
       },
@@ -85,42 +88,30 @@ const styles = StyleSheet.create({
       },
     }),
   },
-  tab: {
+  tabItem: {
     flex: 1,
     alignItems: 'center',
+    justifyContent: 'center',
     paddingVertical: 8,
-    position: 'relative',
-  },
-  activeTab: {
-    backgroundColor: 'transparent',
   },
   iconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     alignItems: 'center',
     justifyContent: 'center',
-    height: 32,
-    width: 32,
     marginBottom: 4,
-    position: 'relative',
   },
-  icon: {
-    marginBottom: 2,
+  activeIconContainer: {
+    backgroundColor: '#E8F5E9',
   },
-  activeDot: {
-    position: 'absolute',
-    bottom: -8,
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#2E7D32',
-  },
-  tabText: {
+  tabLabel: {
     fontSize: 12,
-    fontWeight: '500',
-    color: '#4CAF50',
+    color: '#666',
     marginTop: 2,
   },
-  activeText: {
-    color: '#2E7D32',
+  activeTabLabel: {
+    color: '#4CAF50',
     fontWeight: '600',
   },
 });

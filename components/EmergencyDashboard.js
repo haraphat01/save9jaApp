@@ -22,11 +22,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 export default function EmergencyDashboard() {
   // Recording State and Functions
   const [isRecording, setIsRecording] = useState(false);
-  const [recordings, setRecordings] = useState([]);
-  const [currentlyPlaying, setCurrentlyPlaying] = useState(null);
   const recordingRef = useRef(null);
   const intervalRef = useRef(null);
-  const soundRef = useRef(null);
+  const [hasContacts, setHasContacts] = useState(false);
 
   // Location State
   const [location, setLocation] = useState(null);
@@ -74,7 +72,6 @@ export default function EmergencyDashboard() {
 
   // Load saved recordings on mount
   useEffect(() => {
-    loadSavedRecordings();
     const getLocationAndBattery = async () => {
       await fetchLocation();
       await updateBatteryInfo();
@@ -89,22 +86,11 @@ export default function EmergencyDashboard() {
 
   useEffect(() => {
     // This effect will run whenever `isRecording` changes to false
-    if (!isRecording && recordings.length > 0) {
-      const lastRecordingUri = recordings[recordings.length - 1].uri; //Get the last recording made
-      sendEmergencyData(lastRecordingUri); //Send the data to the server
+    if (!isRecording && recordingRef.current) {
+      const uri = recordingRef.current.getURI();
+      sendEmergencyData(uri); //Send the data to the server
     }
-  }, [isRecording, recordings]);
-
-  const loadSavedRecordings = async () => {
-    try {
-      const savedRecordings = await AsyncStorage.getItem('emergency-recordings');
-      if (savedRecordings) {
-        setRecordings(JSON.parse(savedRecordings));
-      }
-    } catch (error) {
-      console.error('Failed to load recordings', error);
-    }
-  };
+  }, [isRecording]);
 
   const setupSensors = () => {
     const sensorInterval = 200;
@@ -153,7 +139,53 @@ export default function EmergencyDashboard() {
     setPreviousAltitude(altitude);
   };
 
+  // Check for contacts on component mount
+  useEffect(() => {
+    checkContacts();
+  }, []);
+
+  const checkContacts = async () => {
+    try {
+      const authToken = await AsyncStorage.getItem('authToken');
+      const response = await fetch(`${baseUrl}/api/contacts`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${authToken}`,
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to fetch contacts');
+      }
+
+      const data = await response.json();
+      setHasContacts(data.contacts && data.contacts.length > 0);
+    } catch (error) {
+      console.error('Error checking contacts:', error);
+      setHasContacts(false);
+    }
+  };
+
   const startRecording = async () => {
+    if (!hasContacts) {
+      Alert.alert(
+        'No Emergency Contacts',
+        'Please add at least one emergency contact before using the emergency button.',
+        [
+          {
+            text: 'Add Contact',
+            onPress: () => navigation.navigate('Contacts'),
+          },
+          {
+            text: 'Cancel',
+            style: 'cancel',
+          },
+        ]
+      );
+      return;
+    }
+
     try {
       const permissionResponse = await Audio.requestPermissionsAsync();
       if (permissionResponse.status !== 'granted') {
@@ -187,11 +219,7 @@ export default function EmergencyDashboard() {
       try {
         await recordingRef.current.stopAndUnloadAsync();
         const uri = recordingRef.current.getURI();
-        const timestamp = new Date().toISOString();
-
-        const newRecordings = [...recordings, { uri, timestamp }];
-        setRecordings(newRecordings);
-        await AsyncStorage.setItem('emergency-recordings', JSON.stringify(newRecordings));
+        await sendEmergencyData(uri);
 
         const newRecording = new Audio.Recording();
         await newRecording.prepareToRecordAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
@@ -213,12 +241,7 @@ export default function EmergencyDashboard() {
       if (recordingRef.current) {
         await recordingRef.current.stopAndUnloadAsync();
         const uri = recordingRef.current.getURI();
-        const timestamp = new Date().toISOString();
-
-        const newRecordings = [...recordings, { uri, timestamp }];
-        setRecordings(newRecordings);
-        await AsyncStorage.setItem('emergency-recordings', JSON.stringify(newRecordings));
-
+        await sendEmergencyData(uri);
         recordingRef.current = null;
       }
 
@@ -227,69 +250,6 @@ export default function EmergencyDashboard() {
       console.error('Failed to stop recording', error);
       Alert.alert('Error', 'Failed to stop recording');
     }
-  };
-
-  const togglePlayback = async (uri) => {
-    try {
-      if (soundRef.current) {
-        await soundRef.current.unloadAsync();
-        soundRef.current = null;
-        if (currentlyPlaying === uri) {
-          setCurrentlyPlaying(null);
-          return;
-        }
-      }
-
-      const sound = new Audio.Sound();
-      await sound.loadAsync({ uri });
-
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.didJustFinish) {
-          setCurrentlyPlaying(null);
-          soundRef.current = null;
-        }
-      });
-
-      soundRef.current = sound;
-      setCurrentlyPlaying(uri);
-      await sound.playAsync();
-
-    } catch (error) {
-      console.error('Failed to toggle playback', error);
-      Alert.alert('Error', 'Failed to play recording');
-    }
-  };
-
-  const deleteRecording = async (timestamp) => {
-    try {
-      if (soundRef.current) {
-        await soundRef.current.unloadAsync();
-        soundRef.current = null;
-        setCurrentlyPlaying(null);
-      }
-
-      const newRecordings = recordings.filter(rec => rec.timestamp !== timestamp);
-      setRecordings(newRecordings);
-      await AsyncStorage.setItem('emergency-recordings', JSON.stringify(newRecordings));
-    } catch (error) {
-      console.error('Failed to delete recording', error);
-      Alert.alert('Error', 'Failed to delete recording');
-    }
-  };
-
-  const confirmDelete = (timestamp) => {
-    Alert.alert(
-      'Delete Recording',
-      'Are you sure you want to delete this recording?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          onPress: () => deleteRecording(timestamp),
-          style: 'destructive'
-        }
-      ]
-    );
   };
 
   // Location fetching
@@ -444,17 +404,35 @@ export default function EmergencyDashboard() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
+        {!hasContacts && (
+          <View style={styles.warningContainer}>
+            <Ionicons name="warning-outline" size={24} color="#FF5252" />
+            <Text style={styles.warningText}>
+              Please add at least one emergency contact to use this feature
+            </Text>
+          </View>
+        )}
         <TouchableOpacity
           style={[
             styles.emergencyButton,
             isRecording && styles.emergencyButtonActive,
+            !hasContacts && styles.emergencyButtonDisabled,
             styles.buttonShadow
           ]}
           onPress={isRecording ? stopRecording : startRecording}
+          disabled={!hasContacts}
         >
-          <Text style={styles.emergencyText}>
-            {isRecording ? 'Stop Emergency' : 'Tap Emergency'}
-          </Text>
+          <View style={styles.emergencyButtonInner}>
+            <Text style={styles.emergencyText}>
+              {isRecording ? 'Stop Emergency' : 'Tap Emergency'}
+            </Text>
+            <Ionicons 
+              name={isRecording ? "stop-circle" : "alert-circle"} 
+              size={32} 
+              color="white" 
+              style={styles.emergencyIcon}
+            />
+          </View>
         </TouchableOpacity>
 
         <ScrollView
@@ -465,7 +443,9 @@ export default function EmergencyDashboard() {
           {/* Location Section */}
           <View style={[styles.section, styles.cardShadow]}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="location-outline" size={18} color="#666" />
+              <View style={styles.iconContainer}>
+                <Ionicons name="location-outline" size={22} color="#4CAF50" />
+              </View>
               <Text style={styles.sectionTitle}>Location</Text>
               {locationErrorMsg === 'Permission to access location was denied' && (
                 <TouchableOpacity onPress={openSettings} style={styles.settingsButton}>
@@ -475,9 +455,9 @@ export default function EmergencyDashboard() {
             </View>
             {locationLoading ? (
               Platform.OS === 'ios' || Platform.OS === 'android' ? (
-                <ActivityIndicator size="small" color="#007AFF" style={{ marginLeft: 8 }} />
+                <ActivityIndicator size="small" color="#4CAF50" style={styles.loader} />
               ) : (
-                <View style={{ display: 'flex', justifyContent: 'center', alignItems: 'center' }}>
+                <View style={styles.webLoader}>
                   <CircularProgress size={20} />
                 </View>
               )
@@ -495,7 +475,9 @@ export default function EmergencyDashboard() {
           {/* Battery Section */}
           <View style={[styles.section, styles.cardShadow]}>
             <View style={styles.sectionHeader}>
-              <Ionicons name={getBatteryStateIcon()} size={18} color={getBatteryColor()} />
+              <View style={styles.iconContainer}>
+                <Ionicons name={getBatteryStateIcon()} size={22} color={getBatteryColor()} />
+              </View>
               <Text style={styles.sectionTitle}>Battery Status</Text>
             </View>
             <View style={styles.batteryInfo}>
@@ -517,72 +499,76 @@ export default function EmergencyDashboard() {
           {/* Network Section */}
           <View style={[styles.section, styles.cardShadow]}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="wifi-outline" size={18} color="#666" />
+              <View style={styles.iconContainer}>
+                <Ionicons name="wifi-outline" size={22} color="#4CAF50" />
+              </View>
               <Text style={styles.sectionTitle}>Network</Text>
             </View>
             <View style={styles.networkInfo}>
-              <Text>
-                Connection Status: {networkInfo?.isConnected ? 'Connected' : 'Not Connected'}
-              </Text>
-              <Text>
-                Internet Reachable: {networkInfo?.isInternetReachable ? 'Yes' : 'No'}
-              </Text>
-              {networkInfo?.type && <Text>Connection Type: {networkInfo?.type}</Text>}
-              {networkInfo?.cellularGeneration && <Text>Cellular Generation: {networkInfo?.cellularGeneration}</Text>}
+              <View style={styles.networkItem}>
+                <Ionicons name="checkmark-circle-outline" size={16} color={networkInfo?.isConnected ? "#4CAF50" : "#FF5252"} />
+                <Text style={styles.networkText}>
+                  Connection Status: {networkInfo?.isConnected ? 'Connected' : 'Not Connected'}
+                </Text>
+              </View>
+              <View style={styles.networkItem}>
+                <Ionicons name="globe-outline" size={16} color={networkInfo?.isInternetReachable ? "#4CAF50" : "#FF5252"} />
+                <Text style={styles.networkText}>
+                  Internet Reachable: {networkInfo?.isInternetReachable ? 'Yes' : 'No'}
+                </Text>
+              </View>
+              {networkInfo?.type && (
+                <View style={styles.networkItem}>
+                  <Ionicons name="cellular-outline" size={16} color="#4CAF50" />
+                  <Text style={styles.networkText}>Connection Type: {networkInfo?.type}</Text>
+                </View>
+              )}
+              {networkInfo?.cellularGeneration && (
+                <View style={styles.networkItem}>
+                  <Ionicons name="speedometer-outline" size={16} color="#4CAF50" />
+                  <Text style={styles.networkText}>Cellular Generation: {networkInfo?.cellularGeneration}</Text>
+                </View>
+              )}
             </View>
           </View>
 
           {/* Sensor Data Sections (Interpretations) */}
           <View style={[styles.section, styles.cardShadow]}>
             <View style={styles.sectionHeader}>
-              <Ionicons name="alert-outline" size={18} color="#666" />
+              <View style={styles.iconContainer}>
+                <Ionicons name="alert-outline" size={22} color="#4CAF50" />
+              </View>
               <Text style={styles.sectionTitle}>Emergency Interpretations</Text>
             </View>
             <View style={styles.sensorInfo}>
-              {fallDetected && <Text style={styles.alertText}>Possible Fall Detected!</Text>}
-              {impactDetected && <Text style={styles.alertText}>Possible Impact Detected!</Text>}
-              {altitudeChange !== null && (
-                <Text style={styles.alertText}>
-                  Altitude Change: {altitudeChange > 0 ? 'Ascending' : 'Descending'} by {Math.abs(altitudeChange).toFixed(2)} meters
-                </Text>
+              {fallDetected && (
+                <View style={styles.alertItem}>
+                  <Ionicons name="warning" size={16} color="#FF5252" />
+                  <Text style={styles.alertText}>Possible Fall Detected!</Text>
+                </View>
               )}
-              {/* No alerts to display.  */}
+              {impactDetected && (
+                <View style={styles.alertItem}>
+                  <Ionicons name="warning" size={16} color="#FF5252" />
+                  <Text style={styles.alertText}>Possible Impact Detected!</Text>
+                </View>
+              )}
+              {altitudeChange !== null && (
+                <View style={styles.alertItem}>
+                  <Ionicons name="trending-up" size={16} color="#FF5252" />
+                  <Text style={styles.alertText}>
+                    Altitude Change: {altitudeChange > 0 ? 'Ascending' : 'Descending'} by {Math.abs(altitudeChange).toFixed(2)} meters
+                  </Text>
+                </View>
+              )}
               {!(fallDetected || altitudeChange || impactDetected) && (
-                <Text>No alerts at this time.</Text>
+                <View style={styles.noAlertsContainer}>
+                  <Ionicons name="checkmark-circle" size={16} color="#4CAF50" />
+                  <Text style={styles.noAlertsText}>No alerts at this time</Text>
+                </View>
               )}
             </View>
           </View>
-
-          <Text style={styles.recordingsTitle}>Recent Recordings</Text>
-
-          <FlatList
-            data={recordings}
-            keyExtractor={(item) => item.timestamp}
-            renderItem={({ item }) => (
-              <View style={[styles.recordingItem, styles.cardShadow]}>
-                <TouchableOpacity
-                  style={styles.playButton}
-                  onPress={() => togglePlayback(item.uri)}
-                >
-                  <Ionicons
-                    name={currentlyPlaying === item.uri ? "stop-circle-outline" : "play-circle-outline"}
-                    size={24}
-                    color="green"
-                  />
-                </TouchableOpacity>
-                <Text style={styles.recordingTimestamp}>
-                  {new Date(item.timestamp).toLocaleString()}
-                </Text>
-                <TouchableOpacity
-                  style={styles.deleteButton}
-                  onPress={() => confirmDelete(item.timestamp)}
-                >
-                  <Ionicons name="trash-outline" size={24} color="red" />
-                </TouchableOpacity>
-              </View>
-            )}
-            contentContainerStyle={styles.flatListContentContainer}
-          />
         </ScrollView>
       </View>
     </SafeAreaView>
@@ -592,7 +578,7 @@ export default function EmergencyDashboard() {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f5f5f5', // Light gray background
+    backgroundColor: '#F8F9FA',
   },
   container: {
     flex: 1,
@@ -606,30 +592,64 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingBottom: 20,
   },
+  warningContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFF3F3',
+    padding: 15,
+    borderRadius: 12,
+    marginBottom: 20,
+    width: '90%',
+    borderWidth: 1,
+    borderColor: '#FFE0E0',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+  },
+  warningText: {
+    color: '#FF5252',
+    marginLeft: 10,
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '600',
+  },
   emergencyButton: {
     width: 180,
     height: 180,
-    backgroundColor: '#4CAF50', // More appealing green
+    backgroundColor: '#4CAF50',
     justifyContent: 'center',
     alignItems: 'center',
     borderRadius: 90,
     marginBottom: 25,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4.65,
+      },
+      android: {
+        elevation: 8,
+      },
+    }),
   },
-  buttonShadow: {
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
-    shadowOpacity: 0.3,
-    shadowRadius: 4.65,
-    elevation: 8,
+  emergencyButtonInner: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   emergencyButtonActive: {
-    backgroundColor: '#FF5252', // More appealing red
+    backgroundColor: '#FF5252',
   },
   emergencyButtonDisabled: {
-    backgroundColor: '#cccccc', // Gray color to indicate disabled state
+    backgroundColor: '#cccccc',
     opacity: 0.7,
   },
   emergencyText: {
@@ -640,15 +660,151 @@ const styles = StyleSheet.create({
     textShadowColor: 'rgba(0, 0, 0, 0.25)',
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
+    marginBottom: 8,
+  },
+  emergencyIcon: {
+    marginTop: 8,
   },
   section: {
     marginBottom: 16,
     padding: 20,
     backgroundColor: 'white',
-    borderRadius: 15,
+    borderRadius: 16,
     width: '90%',
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.05)',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 3.84,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  iconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#F0F9F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#2c3e50',
+  },
+  loader: {
+    marginLeft: 52,
+  },
+  webLoader: {
+    display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 52,
+  },
+  locationText: {
+    marginLeft: 52,
+    color: '#333',
+    fontSize: 15,
+    lineHeight: 22,
+  },
+  errorText: {
+    marginLeft: 52,
+    color: '#FF5252',
+    fontSize: 15,
+  },
+  batteryInfo: {
+    marginLeft: 52,
+    marginTop: 4,
+  },
+  batteryText: {
+    fontSize: 24,
+    fontWeight: '600',
+  },
+  estimateText: {
+    marginTop: 5,
+    color: '#7f8c8d',
+    fontSize: 15,
+  },
+  lowPowerMode: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    backgroundColor: '#FFF9E6',
+    padding: 8,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+  },
+  lowPowerText: {
+    marginLeft: 5,
+    color: '#FF9500',
+    fontWeight: '500',
+  },
+  networkInfo: {
+    marginLeft: 52,
+  },
+  networkItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  networkText: {
+    marginLeft: 8,
+    color: '#333',
+    fontSize: 15,
+  },
+  sensorInfo: {
+    marginLeft: 52,
+  },
+  alertItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    backgroundColor: '#FFF3F3',
+    padding: 8,
+    borderRadius: 8,
+  },
+  alertText: {
+    color: '#FF5252',
+    fontWeight: '600',
+    fontSize: 15,
+    marginLeft: 8,
+  },
+  noAlertsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F0F9F0',
+    padding: 8,
+    borderRadius: 8,
+  },
+  noAlertsText: {
+    color: '#4CAF50',
+    marginLeft: 8,
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  settingsButton: {
+    backgroundColor: '#3498db',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginLeft: 'auto',
+  },
+  settingsText: {
+    color: 'white',
+    fontSize: 13,
+    fontWeight: '500',
   },
   cardShadow: {
     shadowColor: '#000',
@@ -659,112 +815,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.15,
     shadowRadius: 3.84,
     elevation: 5,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    marginLeft: 10,
-    color: '#2c3e50',
-  },
-  recordingsTitle: {
-    fontSize: 22,
-    fontWeight: '600',
-    marginVertical: 20,
-    color: '#2c3e50',
-    textAlign: 'center',
-  },
-  recordingItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 15,
-    backgroundColor: 'white',
-    borderRadius: 12,
-    marginBottom: 10,
-    width: '90%',
-  },
-  recordingTimestamp: {
-    flex: 1,
-    marginLeft: 15,
-    fontSize: 15,
-    color: '#34495e',
-  },
-  batteryText: {
-    fontSize: 20,
-    fontWeight: '600',
-  },
-  estimateText: {
-    marginTop: 5,
-    color: '#7f8c8d',
-    fontSize: 15,
-  },
-  networkInfo: {
-    marginLeft: 26,
-    marginTop: 8,
-  },
-  alertText: {
-    color: '#FF5252',
-    fontWeight: '600',
-    fontSize: 15,
-    marginVertical: 4,
-  },
-  settingsButton: {
-    backgroundColor: '#3498db',
-    paddingVertical: 6,
-    paddingHorizontal: 12,
-    borderRadius: 8,
-    marginLeft: 10,
-  },
-  settingsText: {
-    color: 'white',
-    fontSize: 13,
-    fontWeight: '500',
-  },
-  flatListContentContainer: {
-    alignItems: 'center',
-    width: '100%',
-  },
-  locationText: {
-    marginLeft: 26,
-    color: '#333',
-  },
-  errorText: {
-    marginLeft: 26,
-    color: 'red',
-  },
-  batteryInfo: {
-    marginLeft: 26,
-    marginTop: 4,
-  },
-  lowPowerMode: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 4,
-  },
-  lowPowerText: {
-    marginLeft: 5,
-    color: '#FF9500',
-  },
-  playButton: {
-    padding: 5,
-  },
-  deleteButton: {
-    padding: 5,
-    marginLeft: 10,
-  },
-  sensorInfo: {
-    marginLeft: 26,
-    marginTop: 4,
-  },
-  warningText: {
-    color: '#FF5252',
-    textAlign: 'center',
-    marginBottom: 20,
-    paddingHorizontal: 20,
-    fontSize: 14,
   },
 });

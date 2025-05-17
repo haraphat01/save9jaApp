@@ -1,5 +1,4 @@
 import React, { useState, useRef } from 'react';
-import security from "../assets/security.jpg"
 import { 
   SafeAreaView, 
   View, 
@@ -9,50 +8,53 @@ import {
   StyleSheet, 
   Dimensions, 
   Image,
-  Animated 
+  Animated,
+  Platform
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 const { width, height } = Dimensions.get('window');
 
 const OnboardingScreen = ({ navigation }) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef(null);
+  const scrollX = useRef(new Animated.Value(0)).current;
   
   const slides = [
     {
       id: '1',
-      title: 'Welcome to Safe9ja',
+      title: 'Welcome to SafeAlert',
       text: 'Your personal safety companion that keeps you protected 24/7.',
-      details: 'Join thousands of Nigerians who trust Safe9ja for their personal security.',
-      image: require('../assets/security.jpg')
+      details: 'Join millions of users worldwide who trust SafeAlert for their personal security.',
+      icon: 'shield-checkmark'
     },
     {
       id: '2',
       title: 'Quick Emergency Response',
-      text: 'Send SOS alerts with just one tap to your trusted contacts and nearby security services.',
+      text: 'Send SOS alerts with just one tap to your trusted contacts and emergency services.',
       details: 'Your emergency contacts will receive your real-time location and status updates.',
-      image: require('../assets/police.jpg')
+      icon: 'alert-circle'
     },
     {
       id: '3',
-      title: 'Community Safety Network',
+      title: 'Global Safety Network',
       text: 'Stay informed about security incidents in your area and contribute to community safety.',
       details: 'Receive real-time alerts about incidents within your vicinity and safe routes.',
-      image: require('../assets/community.jpg')
+      icon: 'people'
     },
     {
       id: '4',
       title: 'Trusted Contacts',
       text: 'Add family members and friends to your trusted circle for enhanced protection.',
       details: 'Your trusted contacts can track your journey and receive instant notifications.',
-      image: require('../assets/trusted.jpg')
+      icon: 'person-add'
     },
     {
       id: '5',
       title: 'Privacy & Security',
       text: 'Your safety is our priority, with bank-grade encryption protecting your data.',
       details: 'Control what you share and who can see your location. Your data never leaves your control.',
-      image: require('../assets/privacy.jpg')
+      icon: 'lock-closed'
     }
   ];
 
@@ -71,11 +73,9 @@ const OnboardingScreen = ({ navigation }) => {
 
   const renderItem = ({ item, index }) => (
     <View style={styles.slide}>
-      <Image
-        source={ item.image }
-        style={styles.image}
-        resizeMode="contain"
-      />
+      <View style={styles.iconContainer}>
+        <Ionicons name={item.icon} size={80} color="#4CAF50" />
+      </View>
       <Text style={styles.title}>{item.title}</Text>
       <Text style={styles.subtitle}>{item.text}</Text>
       <Text style={styles.details}>{item.details}</Text>
@@ -83,46 +83,57 @@ const OnboardingScreen = ({ navigation }) => {
   );
 
   const renderDots = () => {
+    const dotPosition = Animated.divide(scrollX, width);
+    
     return (
       <View style={styles.dotContainer}>
-        {slides.map((_, index) => (
-          <View
-            key={index}
-            style={[
-              styles.dot,
-              { backgroundColor: currentIndex === index ? '#006400' : '#90EE90' }
-            ]}
-          />
-        ))}
+        {slides.map((_, index) => {
+          const opacity = dotPosition.interpolate({
+            inputRange: [index - 1, index, index + 1],
+            outputRange: [0.3, 1, 0.3],
+            extrapolate: 'clamp'
+          });
+          
+          const scale = dotPosition.interpolate({
+            inputRange: [index - 1, index, index + 1],
+            outputRange: [1, 1.2, 1],
+            extrapolate: 'clamp'
+          });
+
+          return (
+            <Animated.View
+              key={index}
+              style={[
+                styles.dot,
+                {
+                  opacity,
+                  transform: [{ scale }]
+                }
+              ]}
+            />
+          );
+        })}
       </View>
     );
   };
 
-  const handleScroll = (event) => {
-    const scrollPosition = event.nativeEvent.contentOffset.x;
-    const index = Math.round(scrollPosition / width);
-    setCurrentIndex(index);
-  };
-
-  // Add this function to handle potential scroll failures
-  const onScrollToIndexFailed = (info) => {
-    const wait = new Promise(resolve => setTimeout(resolve, 500));
-    wait.then(() => {
-      flatListRef.current?.scrollToIndex({ 
-        index: info.index, 
-        animated: true 
-      });
-    });
-  };
+  const handleScroll = Animated.event(
+    [{ nativeEvent: { contentOffset: { x: scrollX } } }],
+    { useNativeDriver: false }
+  );
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.skipContainer}>
-        <TouchableOpacity onPress={() => navigation.navigate('Login')}>
+        <TouchableOpacity 
+          style={styles.skipButton}
+          onPress={() => navigation.navigate('Login')}
+        >
           <Text style={styles.skipText}>Skip</Text>
         </TouchableOpacity>
       </View>
-      <FlatList
+
+      <Animated.FlatList
         ref={flatListRef}
         data={slides}
         renderItem={renderItem}
@@ -132,14 +143,14 @@ const OnboardingScreen = ({ navigation }) => {
         showsHorizontalScrollIndicator={false}
         onScroll={handleScroll}
         scrollEventThrottle={16}
-        onScrollToIndexFailed={onScrollToIndexFailed}
-        getItemLayout={(data, index) => ({
-          length: width,
-          offset: width * index,
-          index,
-        })}
+        onMomentumScrollEnd={(event) => {
+          const index = Math.round(event.nativeEvent.contentOffset.x / width);
+          setCurrentIndex(index);
+        }}
       />
+
       {renderDots()}
+
       <View style={styles.buttonContainer}>
         <TouchableOpacity 
           style={styles.button} 
@@ -148,6 +159,11 @@ const OnboardingScreen = ({ navigation }) => {
           <Text style={styles.buttonText}>
             {currentIndex === slides.length - 1 ? 'Get Started' : 'Next'}
           </Text>
+          <Ionicons 
+            name={currentIndex === slides.length - 1 ? 'checkmark' : 'arrow-forward'} 
+            size={24} 
+            color="white" 
+          />
         </TouchableOpacity>
       </View>
     </SafeAreaView>
@@ -157,16 +173,21 @@ const OnboardingScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white',
+    backgroundColor: '#FFFFFF',
   },
   skipContainer: {
     position: 'absolute',
-    top: 50,
+    top: Platform.OS === 'ios' ? 50 : 30,
     right: 20,
     zIndex: 1,
   },
+  skipButton: {
+    padding: 8,
+    backgroundColor: 'rgba(0, 0, 0, 0.1)',
+    borderRadius: 20,
+  },
   skipText: {
-    color: '#006400',
+    color: '#4CAF50',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -177,32 +198,35 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 20,
   },
-  image: {
-    width: width * 0.8,
-    height: height * 0.4,
+  iconContainer: {
+    width: 160,
+    height: 160,
+    borderRadius: 80,
+    backgroundColor: '#E8F5E9',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginBottom: 40,
   },
   title: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
-    color: '#006400',
+    color: '#2C3E50',
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 16,
   },
   subtitle: {
     fontSize: 18,
-    color: '#2E8B57',
+    color: '#4CAF50',
+    textAlign: 'center',
+    lineHeight: 26,
+    marginBottom: 16,
+  },
+  details: {
+    fontSize: 16,
+    color: '#666666',
     textAlign: 'center',
     lineHeight: 24,
     paddingHorizontal: 20,
-    marginBottom: 12,
-  },
-  details: {
-    fontSize: 14,
-    color: '#666666',
-    textAlign: 'center',
-    lineHeight: 20,
-    paddingHorizontal: 30,
   },
   dotContainer: {
     flexDirection: 'row',
@@ -214,22 +238,37 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
+    backgroundColor: '#4CAF50',
     marginHorizontal: 5,
   },
   buttonContainer: {
     paddingHorizontal: 20,
-    paddingBottom: 20,
+    paddingBottom: Platform.OS === 'ios' ? 20 : 40,
   },
   button: {
-    backgroundColor: '#006400',
+    backgroundColor: '#4CAF50',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     padding: 18,
     borderRadius: 12,
-    alignItems: 'center',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.2,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
   },
   buttonText: {
     color: 'white',
     fontWeight: 'bold',
     fontSize: 18,
+    marginRight: 8,
   },
 });
 
