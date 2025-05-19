@@ -80,16 +80,6 @@ const ProfilePage = ({ navigation }) => {
             </TouchableOpacity>
           </View>
 
-          <View style={styles.profileSection}>
-            <View style={styles.avatarContainer}>
-              <View style={styles.avatar}>
-                <Ionicons name="person" size={40} color="#4CAF50" />
-              </View>
-            </View>
-            <Text style={styles.userName}>John Doe</Text>
-            <Text style={styles.userEmail}>john.doe@example.com</Text>
-          </View>
-
           <View style={styles.menuContainer}>
             {menuItems.map((item, index) => (
               <TouchableOpacity

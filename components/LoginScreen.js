@@ -43,25 +43,36 @@ const LoginScreen = ({ navigation }) => {
 
     setLoading(true);
     try {
+      console.log('Attempting login with:', { email: formData.email });
       const response = await fetch(`${baseUrl}/api/login`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
         }),
       });
 
+      console.log('Response status:', response.status);
       const data = await response.json();
+      console.log('Response data:', data);
 
       if (response.ok) {
         await AsyncStorage.setItem('authToken', data.token);
-        navigation.replace('Home'); // Using replace to prevent going back to login
+        navigation.replace('Home');
       } else {
-        setErrors({ submit: data.error || 'Invalid email or password' });
+        const errorMessage = data.error || data.message || 'Invalid email or password';
+        console.error('Login error:', errorMessage);
+        setErrors({ submit: errorMessage });
       }
     } catch (error) {
-      setErrors({ submit: 'Connection error. Please try again.' });
+      console.error('Login exception:', error);
+      setErrors({ 
+        submit: error.message || 'Connection error. Please check your internet connection and try again.' 
+      });
     } finally {
       setLoading(false);
     }

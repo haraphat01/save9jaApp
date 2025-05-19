@@ -36,16 +36,16 @@ const WelcomeScreen = ({ navigation }) => {
           <View style={styles.content}>
             {/* Header Section */}
             <View style={styles.headerContainer}>
-              <Text style={styles.welcomeText}>Welcome Back</Text>
-              <Text style={styles.title}>Your Safety Dashboard</Text>
+              <Text style={styles.welcomeText}>Welcome to SafeAlert</Text>
+              <Text style={styles.title}>Your Personal Safety Guardian</Text>
               <Text style={styles.subtitle}>
-                Access emergency services and monitor your safety status
+                Stay protected with real-time emergency alerts, instant access to help, and 24/7 safety monitoring
               </Text>
             </View>
 
             {/* Main Dashboard */}
             <View style={styles.dashboardContainer}>
-              <EmergencyDashboard />
+              <EmergencyDashboard navigation={navigation} />
             </View>
 
             {/* Additional Safety Features */}
@@ -53,7 +53,21 @@ const WelcomeScreen = ({ navigation }) => {
               <View style={styles.featureCard}>
                 <Text style={styles.featureTitle}>Quick Actions</Text>
                 <View style={styles.featureContent}>
-                  {/* You can add quick action buttons here */}
+                  <Text style={styles.tipText}>
+                    • Tap the emergency button for immediate assistance
+                  </Text>
+                  <Text style={styles.tipText}>
+                    • Shake your phone to trigger emergency alert
+                  </Text>
+                  <Text style={styles.tipText}>
+                    • View your safety status and location tracking
+                  </Text>
+                  <Text style={styles.tipText}>
+                    • Access your emergency contacts quickly
+                  </Text>
+                  <Text style={styles.tipText}>
+                    • Check your recent safety alerts
+                  </Text>
                 </View>
               </View>
 
@@ -61,13 +75,43 @@ const WelcomeScreen = ({ navigation }) => {
                 <Text style={styles.featureTitle}>Safety Tips</Text>
                 <View style={styles.featureContent}>
                   <Text style={styles.tipText}>
-                    • Keep your emergency contacts updated
+                    • Keep your emergency contacts updated and verified
                   </Text>
                   <Text style={styles.tipText}>
-                    • Enable location services for better assistance
+                    • Enable location services for accurate emergency response
                   </Text>
                   <Text style={styles.tipText}>
-                    • Test your emergency alert monthly
+                    • Test your emergency alert system monthly
+                  </Text>
+                  <Text style={styles.tipText}>
+                    • Share your live location with trusted contacts
+                  </Text>
+                  <Text style={styles.tipText}>
+                    • Keep your medical information updated
+                  </Text>
+                  <Text style={styles.tipText}>
+                    • Set up custom emergency messages
+                  </Text>
+                  <Text style={styles.tipText}>
+                    • Review your safety settings regularly
+                  </Text>
+                </View>
+              </View>
+
+              <View style={styles.featureCard}>
+                <Text style={styles.featureTitle}>Emergency Preparedness</Text>
+                <View style={styles.featureContent}>
+                  <Text style={styles.tipText}>
+                    • Know your nearest emergency services
+                  </Text>
+                  <Text style={styles.tipText}>
+                    • Keep your phone charged and location on
+                  </Text>
+                  <Text style={styles.tipText}>
+                    • Update your safety preferences
+                  </Text>
+                  <Text style={styles.tipText}>
+                    • Review emergency contact response times
                   </Text>
                 </View>
               </View>
