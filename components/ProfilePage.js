@@ -23,6 +23,13 @@ const ProfilePage = ({ navigation }) => {
 
   const menuItems = [
     {
+      title: 'Subscription',
+      description: 'Upgrade to premium features',
+      icon: 'star-outline',
+      screen: 'Subscription',
+      color: '#FFD700'
+    },
+    {
       title: 'Personal Details',
       description: 'Manage your personal information',
       icon: 'person-outline',
@@ -141,45 +148,6 @@ const styles = StyleSheet.create({
   },
   editButton: {
     padding: 8,
-  },
-  profileSection: {
-    alignItems: 'center',
-    paddingVertical: 20,
-    backgroundColor: 'white',
-    marginHorizontal: 20,
-    borderRadius: 16,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.1,
-        shadowRadius: 4,
-      },
-      android: {
-        elevation: 4,
-      },
-    }),
-  },
-  avatarContainer: {
-    marginBottom: 16,
-  },
-  avatar: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#E8F5E9',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  userName: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#2C3E50',
-    marginBottom: 4,
-  },
-  userEmail: {
-    fontSize: 14,
-    color: '#7F8C8D',
   },
   menuContainer: {
     paddingHorizontal: 20,

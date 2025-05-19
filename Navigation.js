@@ -14,6 +14,8 @@ import PersonalDetails from './components/PersonalDetails';
 import IncidentHistory from './components/IncidentHistory';
 import ManageContacts from './components/ManageContacts';
 import ContactPage from './components/ContactPage';
+import Subscription from './components/Subscription';
+
 const Stack = createStackNavigator();
 const queryClient = new QueryClient();
 
@@ -34,7 +36,7 @@ const Navigation = () => {
           <Stack.Screen name="Report" component={IncidentHistory} options={{ headerShown: false }} />
           <Stack.Screen name="Contacts" component={ContactPage} options={{ headerShown: false }} />
           <Stack.Screen name="Delete" component={ManageContacts} options={{ headerShown: false }} />
-
+          <Stack.Screen name="Subscription" component={Subscription} options={{ headerShown: false }} />
         </Stack.Navigator>
       </NavigationContainer>
     </QueryClientProvider>
