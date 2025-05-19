@@ -233,7 +233,8 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         backgroundColor: '#4CAF50',
         marginHorizontal: 20,
-        paddingVertical: 12,
+        paddingVertical: 16,
+        paddingHorizontal: 24,
         borderRadius: 12,
         marginBottom: 20,
         ...Platform.select({
@@ -250,9 +251,9 @@ const styles = StyleSheet.create({
     },
     addButtonText: {
         color: 'white',
-        fontSize: 16,
+        fontSize: 18,
         fontWeight: '600',
-        marginLeft: 8,
+        marginLeft: 12,
     },
     listContainer: {
         padding: 20,
